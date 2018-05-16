@@ -324,6 +324,22 @@ for(i in 1:length(boxes)){
 }
 #wait until 8191 is pop up
 
+library(sets)
+checkbad<-function(){
+  #for(i in 1:length(boxes)){
+  for(i in 1:13){
+    s1<-boxstrategy[[i]][[2]][,2]
+    s2<-boxstrategy[[i]][[3]][,2]
+    s1<-as.set(s1)
+    s2<-as.set(s2)
+    if(!set_is_subset(s2, s1)){
+      print(i)
+    }
+  }
+  return("Done")
+}
+#checkbad()
+
 
 #b : boxes opening, eg c(1,0,0,0,0,0,0,0,0,0,0,0,0) means only Aces opening
 #d : dice, eg c(5,0,0,0,0,0) means five dice with Aces
@@ -341,19 +357,65 @@ decision<-function(b,d,r){
   }
 }
 
-library(sets)
-checkbad<-function(){
-  #for(i in 1:length(boxes)){
-  for(i in 1:13){
-    s1<-boxstrategy[[i]][[2]][,2]
-    s2<-boxstrategy[[i]][[3]][,2]
-    s1<-as.set(s1)
-    s2<-as.set(s2)
-    if(!set_is_subset(s2, s1)){
-      print(i)
+filldice <-function(ms){
+  left<-(5-sum(ms))
+  samples<-sample(1:6,left,replace = TRUE)
+  for(i in 1:left){
+    ms[samples[i]]=ms[samples[i]]+1
+  }
+  return(ms)
+}
+
+simulationgameonce<-function(b,d,r,sc=0){
+  if(r==3){
+    d=filldice(c(0,0,0,0,0,0))
+    r=2
+  }
+  idb<-boxbook[[toString(b)]]
+  idd<-ppsbook[[toString(d)]]
+  
+  k<- boxstrategy[[idb]][[r+1]][idd,2]
+  if(r!=0){
+    return(simulationgameonce(b,filldice(aps[[k]]),r-1,sc))
+  }else{
+    b[k]=0
+    sc = sc + scoreBasis(k,d)
+    if(sum(b)==0){
+      return(sc)
+    }else{
+    return(simulationgameonce(b,d,3,sc))
     }
   }
-  return("Done")
 }
-#checkbad()
+
+simulationgamen<-function(n,b,d,r){
+  result = c()
+  for(i in 1:n){
+    result[i]=simulationgameonce(b,d,r)
+  }
+  return(result)
+}
+
+#large straight 10000 times
+set.seed(20181818)
+result1 = simulationgamen(10000,c(0,0,0,0,0,0,0,0,1,0,0,0,0),c(1,1,1,1,1,1),3)
+sum(result1/40)
+
+#full house 10000 times
+set.seed(20181818)
+result2 = simulationgamen(10000,c(0,0,0,0,0,0,1,0,0,0,0,0,0),c(1,1,1,1,1,1),3)
+sum(result2/25)
+
+#three of a kind 10000 times
+set.seed(20181818)
+result3 = simulationgamen(10000,c(0,0,0,0,0,0,0,0,0,0,1,0,0),c(1,1,1,1,1,1),3)
+mean(result3)
+sd(result3)
+
+#whole game 10000 times
+set.seed(20181818)
+resultw = simulationgamen(10000,c(1,1,1,1,1,1,1,1,1,1,1,1,1),c(1,1,1,1,1,1),3)
+mean(resultw)
+sd(resultw)
+
 
